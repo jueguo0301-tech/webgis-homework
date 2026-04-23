@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebGIS专题地图应用 - 郭珏</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/5.0/esri/themes/light/main.css" />
+  <style>
+    :root {
+      --primary: #1e4fd6;
+      --primary-2: #5393ff;
+      --bg: #edf4ff;
+      --panel: rgba(255,255,255,0.94);
+      --text: #16304f;
+      --muted: #64748b;
+      --shadow: 0 12px 32px rgba(20, 46, 94, 0.14);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 84px 1fr 94px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 28px;
+      color: #fff;
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #60a5fa 100%);
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24);
+      z-index: 5;
+    }
+    .header-title h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+    }
+    .header-title p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      opacity: 0.95;
+    }
+    .header-meta {
+      text-align: right;
+      line-height: 1.8;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .map-wrap {
+      position: relative;
+      padding: 14px;
+    }
+    #viewDiv {
+      width: 100%;
+      height: 100%;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .left-tools {
+      position: absolute;
+      top: 34px;
+      left: 34px;
+      z-index: 6;
+      width: 210px;
+      padding: 18px;
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.7);
+    }
+    .tool-title {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #1f3760;
+    }
+    .tool-subtitle {
+      margin: 10px 0 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .tool-btn {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 12px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+      transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+    .tool-btn:hover { transform: translateY(-1px); }
+    .tool-btn.secondary {
+      background: linear-gradient(135deg, #64748b, #94a3b8);
+    }
+    .tool-note {
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+    .search-shell {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      z-index: 6;
+      width: 360px;
+      padding: 14px;
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.7);
+    }
+    .search-title {
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #1f3760;
+    }
+    .search-box-host {
+      min-height: 44px;
+    }
+    .legend-panel {
+      position: absolute;
+      right: 30px;
+      bottom: 30px;
+      z-index: 6;
+      width: 360px;
+      padding: 16px;
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.7);
+    }
+    .legend-title {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #1f3760;
+    }
+    .legend-desc {
+      margin: 0 0 10px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .legend-host {
+      min-height: 52px;
+    }
+    .basemap-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 28px;
+      background: rgba(255,255,255,0.9);
+      border-top: 1px solid rgba(187, 204, 233, 0.8);
+      box-shadow: 0 -8px 20px rgba(46, 72, 122, 0.05);
+      overflow-x: auto;
+    }
+    .basemap-bar strong {
+      white-space: nowrap;
+      color: #1f3760;
+      font-size: 15px;
+    }
+    .bottom-tip {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    @media (max-width: 1024px) {
+      .app { grid-template-rows: 94px 1fr 110px; }
+      .search-shell, .legend-panel, .left-tools {
+        position: static;
+        width: auto;
+        margin: 10px 0 0;
+      }
+      .map-wrap {
+        display: flex;
+        flex-direction: column;
+      }
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 12px 18px;
+      }
+      .header-meta { text-align: left; }
+      .basemap-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 14px 18px;
+      }
+      .bottom-tip { margin-left: 0; white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-title">
+        <h1>WebGIS 专题地图应用</h1>
+        <p>主题设计：美国各州人口总量分级设色图 · ArcGIS Maps SDK for JavaScript 5.0</p>
+      </div>
+      <div class="header-meta">
+        <div>课程作业：WebGIS 应用开发</div>
+        <div>姓名：郭珏　学号：3235706096</div>
+      </div>
+    </header>
+
+    <section class="map-wrap">
+      <div id="viewDiv"></div>
+
+      <aside class="left-tools">
+        <h3 class="tool-title">地图工具</h3>
+        <div class="tool-subtitle">底图切换</div>
+        <button class="tool-btn" data-map="streets-vector">ArcGIS 街道</button>
+        <button class="tool-btn" data-map="topo-vector">ArcGIS 地形</button>
+        <button class="tool-btn" data-map="satellite">ArcGIS 影像</button>
+        <button class="tool-btn" data-map="gray-vector">ArcGIS 灰色</button>
+        <div class="tool-subtitle">视图控制</div>
+        <button class="tool-btn secondary" id="resetViewBtn">恢复初始视图</button>
+        <div class="tool-note">
+          当前专题主题为“美国各州人口总量分级设色图”，颜色越深代表人口总量越高；可使用搜索框按州名检索并自动定位。
+        </div>
+      </aside>
+
+      <aside class="search-shell">
+        <div class="search-title">搜索框</div>
+        <div id="searchBox" class="search-box-host"></div>
+      </aside>
+
+      <aside class="legend-panel">
+        <h3 class="legend-title">图例</h3>
+        <p class="legend-desc">专题图层按人口总量进行四级分级设色，浅蓝表示人口较少，深蓝表示人口更多。</p>
+        <div id="legendBox" class="legend-host"></div>
+      </aside>
+    </section>
+  </div>
+
+  <script type="module" src="https://js.arcgis.com/5.0/"></script>
+  <script type="module">
+    const [
+      Map,
+      MapView,
+      FeatureLayer,
+      Search,
+      Legend,
+      ScaleBar,
+      LayerList
+    ] = await $arcgis.import([
+      "@arcgis/core/Map.js",
+      "@arcgis/core/views/MapView.js",
+      "@arcgis/core/layers/FeatureLayer.js",
+      "@arcgis/core/widgets/Search.js",
+      "@arcgis/core/widgets/Legend.js",
+      "@arcgis/core/widgets/ScaleBar.js",
+      "@arcgis/core/widgets/LayerList.js"
+    ]);
+
+    const initialCenter = [-98, 39];
+    const initialZoom = 4;
+
+    const thematicLayer = new FeatureLayer({
+      url: "https://sampleserver6.arcgisonline.com/arcgis/rest/services/Census/MapServer/3",
+      title: "专题图层：美国各州人口总量分级图",
+      outFields: ["*"],
+      renderer: {
+        type: "class-breaks",
+        field: "POP2007",
+        defaultSymbol: {
+          type: "simple-fill",
+          color: "#dbeafe",
+          outline: {
+            color: "#9fb8df",
+            width: 0.8
+          }
+        },
+        classBreakInfos: [
+          {
+            minValue: 0,
+            maxValue: 2000000,
+            label: "0 - 200万",
+            symbol: {
+              type: "simple-fill",
+              color: "#dbeafe",
+              outline: { color: "#a7c5eb", width: 0.8 }
+            }
+          },
+          {
+            minValue: 2000000,
+            maxValue: 6000000,
+            label: "200万 - 600万",
+            symbol: {
+              type: "simple-fill",
+              color: "#93c5fd",
+              outline: { color: "#7aa8df", width: 0.8 }
+            }
+          },
+          {
+            minValue: 6000000,
+            maxValue: 12000000,
+            label: "600万 - 1200万",
+            symbol: {
+              type: "simple-fill",
+              color: "#3b82f6",
+              outline: { color: "#2b6fda", width: 0.8 }
+            }
+          },
+          {
+            minValue: 12000000,
+            maxValue: 40000000,
+            label: "1200万以上",
+            symbol: {
+              type: "simple-fill",
+              color: "#1d4ed8",
+              outline: { color: "#1b3fa8", width: 0.8 }
+            }
+          }
+        ]
+      },
+      popupTemplate: {
+        title: "{STATE_NAME}",
+        content: `
+          <div style="line-height:1.8;">
+            <b>主题：</b>人口总量分级设色图<br>
+            <b>州名：</b>{STATE_NAME}<br>
+            <b>2000年人口：</b>{POP2000}<br>
+            <b>2007年人口：</b>{POP2007}<br>
+            <b>面积：</b>{AREANAME}
+          </div>
+        `
+      }
+    });
+
+    const map = new Map({
+      basemap: "streets-vector",
+      layers: [thematicLayer]
+    });
+
+    const view = new MapView({
+      container: "viewDiv",
+      map,
+      center: initialCenter,
+      zoom: initialZoom,
+      popup: {
+        dockEnabled: true,
+        dockOptions: {
+          buttonEnabled: false,
+          breakpoint: false,
+          position: "bottom-left"
+        }
+      }
+    });
+
+    const search = new Search({
+      view,
+      container: "searchBox",
+      includeDefaultSources: true,
+      sources: [
+        {
+          layer: thematicLayer,
+          searchFields: ["STATE_NAME"],
+          displayField: "STATE_NAME",
+          outFields: ["*"],
+          exactMatch: false,
+          name: "州名搜索",
+          placeholder: "请输入州名搜索"
+        }
+      ]
+    });
+
+    const legend = new Legend({
+      view,
+      container: "legendBox",
+      layerInfos: [
+        {
+          layer: thematicLayer,
+          title: "人口总量分级图例"
+        }
+      ]
+    });
+
+    const scaleBar = new ScaleBar({
+      view,
+      unit: "metric"
+    });
+
+    const layerList = new LayerList({ view });
+
+    view.ui.add(scaleBar, "bottom-left");
+    view.ui.add(layerList, "top-right");
+
+    document.querySelectorAll(".tool-btn[data-map]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        map.basemap = btn.dataset.map;
+      });
+    });
+
+    document.getElementById("resetViewBtn").addEventListener("click", () => {
+      view.goTo({ center: initialCenter, zoom: initialZoom });
+    });
+  </script>
+</body>
+</html>
