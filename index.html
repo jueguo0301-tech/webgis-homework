@@ -26,9 +26,9 @@
       background: var(--bg);
     }
     .app {
-      height: 100%;
+      height: 100vh;
       display: grid;
-      grid-template-rows: 84px 1fr 94px;
+      grid-template-rows: 84px 1fr;
     }
     .header {
       display: flex;
@@ -165,29 +165,8 @@
     .legend-host {
       min-height: 52px;
     }
-    .basemap-bar {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 0 28px;
-      background: rgba(255,255,255,0.9);
-      border-top: 1px solid rgba(187, 204, 233, 0.8);
-      box-shadow: 0 -8px 20px rgba(46, 72, 122, 0.05);
-      overflow-x: auto;
-    }
-    .basemap-bar strong {
-      white-space: nowrap;
-      color: #1f3760;
-      font-size: 15px;
-    }
-    .bottom-tip {
-      margin-left: auto;
-      color: var(--muted);
-      font-size: 13px;
-      white-space: nowrap;
-    }
     @media (max-width: 1024px) {
-      .app { grid-template-rows: 94px 1fr 110px; }
+      .app { grid-template-rows: 94px 1fr; }
       .search-shell, .legend-panel, .left-tools {
         position: static;
         width: auto;
@@ -204,13 +183,6 @@
         padding: 12px 18px;
       }
       .header-meta { text-align: left; }
-      .basemap-bar {
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
-        padding: 14px 18px;
-      }
-      .bottom-tip { margin-left: 0; white-space: normal; }
     }
   </style>
 </head>
@@ -240,7 +212,7 @@
         <div class="tool-subtitle">视图控制</div>
         <button class="tool-btn secondary" id="resetViewBtn">恢复初始视图</button>
         <div class="tool-note">
-          当前专题主题为“美国各州人口总量分级设色图”，颜色越深代表人口总量越高；可使用搜索框按州名检索并自动定位。
+          当前专题主题为“美国各州人口总量分级设色图”，颜色越深代表人口总量越高；地图面内已标注州名，可使用搜索框按州名检索并自动定位。
         </div>
       </aside>
 
@@ -284,6 +256,29 @@
       url: "https://sampleserver6.arcgisonline.com/arcgis/rest/services/Census/MapServer/3",
       title: "专题图层：美国各州人口总量分级图",
       outFields: ["*"],
+      labelsVisible: true,
+      labelingInfo: [
+        {
+          labelExpressionInfo: {
+            expression: "$feature.STATE_NAME"
+          },
+          labelPlacement: "always-horizontal",
+          deconflictionStrategy: "static",
+          minScale: 0,
+          maxScale: 0,
+          symbol: {
+            type: "text",
+            color: "#0f172a",
+            haloColor: "#ffffff",
+            haloSize: 1.8,
+            font: {
+              family: "Microsoft YaHei",
+              size: 9,
+              weight: "bold"
+            }
+          }
+        }
+      ],
       renderer: {
         type: "class-breaks",
         field: "POP2007",
